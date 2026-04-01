@@ -7,7 +7,7 @@ process.env.JWT_SECRET = 'test-secret';
 const { initialize } = require('../src/models/database');
 initialize();
 
-const app = require('../src/app');
+const { app } = require('../src/app');
 
 let adminToken, analystToken, viewerToken;
 

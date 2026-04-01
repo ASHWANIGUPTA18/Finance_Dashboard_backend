@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const { authenticate, authorize } = require('../middleware/auth');
 const recordService = require('../services/recordService');
+const { broadcastDashboardUpdate } = require('../services/realtimeService');
 
 const router = Router();
 
@@ -62,6 +63,11 @@ router.post('/', authorize('admin'), [
       ...req.body,
       user_id: req.user.id,
     });
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('record_created', { record, user: req.user.name });
+      broadcastDashboardUpdate(io);
+    }
     res.status(201).json(record);
   } catch (err) { next(err); }
 });
@@ -77,6 +83,11 @@ router.patch('/:id', authorize('admin'), [
 ], validate, (req, res, next) => {
   try {
     const record = recordService.updateRecord(parseInt(req.params.id), req.body);
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('record_updated', { record, user: req.user.name });
+      broadcastDashboardUpdate(io);
+    }
     res.json(record);
   } catch (err) { next(err); }
 });
@@ -87,6 +98,11 @@ router.delete('/:id', authorize('admin'), [
 ], validate, (req, res, next) => {
   try {
     recordService.deleteRecord(parseInt(req.params.id));
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('record_deleted', { id: parseInt(req.params.id), user: req.user.name });
+      broadcastDashboardUpdate(io);
+    }
     res.status(204).end();
   } catch (err) { next(err); }
 });
